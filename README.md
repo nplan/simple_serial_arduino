@@ -85,9 +85,9 @@ as one of the flag bytes. *default = ASCII 1 SOH*
 
 A complete packet frame:
 
-BYTE 0| BYTE 1 | BYTE 2 | BYTES 3 ... *N*-1 | BYTE *N*
-------|--------|--------|------------- -----|---------
-START|LEN|ID|Payload Data Bytes|END
+|BYTE 0| BYTE 1 | BYTE 2 | BYTES 3 ... *N*-1 | BYTE *N*|
+|------|--------|--------|-------------------|---------|
+|START|LEN|ID|Payload Data Bytes|END|
 
 Byte 1 *LEN* indicates the total length of packet in bytes.
 
