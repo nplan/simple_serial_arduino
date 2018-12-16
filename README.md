@@ -73,13 +73,15 @@ if (s.available()) {
 }
 ```
 
-The default payload length in bytes is set to 8. This can be changed by setting the constant ```MAX_LEN_PYLD``` in ```SimpleSerial.h```.
+The default payload length in bytes is set to 8. This can be changed by setting
+the constant ```MAX_LEN_PYLD``` in ```SimpleSerial.h```.
 
 ## How it works?
 Before being sent over serial port, data is framed into packets using using special **flag bytes**:
 * *START* Byte - Signalling **start** of packet, *default = ASCII 2 STX*
 * *END* Byte - Signalling **end** of packet, *default = ASCII 3 ETX*
-* *ESC* Byte - Inserted prior to payload data byte if it happens to have the same byte value as one of the flag bytes. *default = ASCII 1 SOH*
+* *ESC* Byte - Inserted prior to payload data byte if it happens to have the same byte value
+as one of the flag bytes. *default = ASCII 1 SOH*
 
 A complete packet frame:
 
@@ -89,8 +91,13 @@ START|LEN|ID|Payload Data Bytes|END
 
 Byte 1 *LEN* indicates the total length of packet in bytes.
 
-When one of the ```SimpleSerial.send()``` functions is called, the payload is framed into a packet and placed into **send queue**. Packets from this queue are sent over serial port inside ```SimpleSerial.sendLoop()```.
+When one of the ```SimpleSerial.send()``` functions is called, the payload is framed into a packet
+and placed into **send queue**. Packets from this queue are sent over serial port
+inside ```SimpleSerial.sendLoop()```.
 
-Serial port is being monitored for incoming packets using ```SimpleSerial.readLoop()``` function. The function reads incoming packet frames byte by byte. When a complete packet frame is received, it is placed into **read queue**. Packets are retrieved from this queue with function ```SimpleSerial.read()```.
+Serial port is being monitored for incoming packets using ```SimpleSerial.readLoop()``` function.
+The function reads incoming packet frames byte by byte. When a complete packet frame is received, it is placed
+into **read queue**. Packets are retrieved from this queue with function ```SimpleSerial.read()```.
 
 The length of send and read queues is set by constant ```QUEUE_LEN``` inside ```SimpleSerial.h```.
+If a queue is full, packets are discarded (not sent or not received).
