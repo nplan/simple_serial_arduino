@@ -7,7 +7,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <arduino.h>
 
 const uint16_t MAX_LEN_PYLD = 8;                // Max payload length
 const uint16_t MAX_PCKT_LEN = 2 * MAX_LEN_PYLD; // Maximum frame length
