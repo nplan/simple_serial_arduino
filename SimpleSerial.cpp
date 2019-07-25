@@ -20,14 +20,14 @@ bool SimpleSerial::available(void) {
  * Takes payload (in bytes) and its id, frames it into a packet, and places it
  * in send queue.
  */
-void SimpleSerial::send(uint8_t id, uint8_t bytesLen, uint8_t bytes[]) {
+void SimpleSerial::send(uint8_t id, uint8_t len, uint8_t payload[]) {
     // Do nothing if queue full
     if (_sendQueueLen >= QUEUE_LEN)
         return;
     // Frame packet
     uint8_t packet[MAX_PCKT_LEN];
     uint8_t packetLen;
-    this->frame(id, bytesLen, bytes, packetLen, packet);
+    this->frame(id, len, payload, packetLen, packet);
     // Place packet in send queue
     uint8_t queueIndex = _sendQueueLen;
     for (uint8_t i = 0; i < packetLen; i++) {
@@ -98,24 +98,24 @@ void SimpleSerial::sendLoop(uint32_t time) {
     if (_sendQueueLen < 1)
         // Return if nothing to send
         return;
-    // Loop through waiting packets
+        // Loop through waiting packets
     else {
         // Send packet
         uint8_t i = _sendQueueLen - 1;
-        uint8_t nrWritten = _writeFun(_sendQueue[i], _sendQueueLengths[i]);
+        _writeFun(_sendQueue[i], _sendQueueLengths[i]);
         _sendQueueLen--;
-        }
+    }
 }
 
 /*
  * Returns and removes the oldest packet in the read queue.
  */
-void SimpleSerial::read(uint8_t &id, uint8_t &len, uint8_t bytearray[]) {
+void SimpleSerial::read(uint8_t &id, uint8_t &len, uint8_t payload[]) {
     id = _readQueueIDs[0];
     len = _readQueueLengths[0];
     // Copy from read queue
     for (uint8_t i = 0; i < len; i++) {
-        bytearray[i] = _readQueue[0][i];
+        payload[i] = _readQueue[0][i];
     }
     _readQueueLen--;
     // Shift read list forward.
@@ -126,12 +126,12 @@ void SimpleSerial::read(uint8_t &id, uint8_t &len, uint8_t bytearray[]) {
     }
 }
 
-float SimpleSerial::bytes2Float(uint8_t len, uint8_t bytes[]) {
+float SimpleSerial::bytes2Float(uint8_t bytes[]) {
     union u {
         float _f;
         uint8_t b[4];
     } u;
-    for (uint8_t i = 0; i < len; i++) {
+    for (uint8_t i = 0; i < 4; i++) {
         u.b[i] = bytes[i];
     }
     return u._f;
@@ -148,12 +148,12 @@ void SimpleSerial::float2Bytes(float f, uint8_t bytes[]) {
     }
 }
 
-int16_t SimpleSerial::bytes2Int(uint8_t len, uint8_t bytes[]) {
+int16_t SimpleSerial::bytes2Int(uint8_t bytes[]) {
     union u {
         int16_t _i;
         uint8_t b[4];
     } u;
-    for (uint8_t i = 0; i < len; i++) {
+    for (uint8_t i = 0; i < 4; i++) {
         u.b[i] = bytes[i];
     }
 
@@ -258,4 +258,9 @@ void SimpleSerial::readLoop(uint32_t time) {
 void SimpleSerial::loop(uint32_t time) {
     sendLoop(time);
     readLoop(time);
+}
+
+void SimpleSerial::confirmReceived(uint8_t id) {
+    uint8_t pld[] = {255};
+    send(id, 1, pld);
 }
