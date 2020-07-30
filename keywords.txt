@@ -1,15 +1,13 @@
-SimpleSerial  KEYWORD1
+SimpleSerial	KEYWORD1
 
-available     KEYWORD2
-read          KEYWORD2
-bytes2Float   KEYWORD2
-float2Bytes   KEYWORD2
-bytes2Int     KEYWORD2
-int2Bytes     KEYWORD2
-send          KEYWORD2
-sendFloat     KEYWORD2
-sendInt       KEYWORD2
-readLoop      KEYWORD2
-sendLoop      KEYWORD2
-
-MAX_LEN_PYLD  KEYWORD3
+available	KEYWORD2
+read	KEYWORD2
+bytes_2_float	KEYWORD2
+float_2_bytes	KEYWORD2
+bytes_2_int	KEYWORD2
+int_2_bytes	KEYWORD2
+send	KEYWORD2
+send_float	KEYWORD2
+send_int	KEYWORD2
+read_loop	KEYWORD2
+send_loop	KEYWORD2

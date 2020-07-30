@@ -1,47 +1,34 @@
 #include "SimpleSerial.h"
-
-SimpleSerial::SimpleSerial(AvailableFunType availableFun, ReadFunType readFun, WriteFunType writeFun) {
-    _availableFun = availableFun;
-    _readFun = readFun;
-    _writeFun = writeFun;
-}
+#include <string.h>
 
 /*
  * Returns true if data is available.
  */
-bool SimpleSerial::available(void) {
-    if (_readQueueLen != 0)
-        return true;
-    else
-        return false;
+bool SimpleSerial::available() {
+    return receive_queue.count();
 }
 
 /*
  * Takes payload (in bytes) and its id, frames it into a packet, and places it
  * in send queue.
  */
-void SimpleSerial::send(uint8_t id, uint8_t len, uint8_t payload[]) {
-    // Do nothing if queue full
-    if (_sendQueueLen >= QUEUE_LEN)
-        return;
+void SimpleSerial::send(uint8_t id, uint8_t len, uint8_t const payload[]) {
+
     // Frame packet
-    uint8_t packet[MAX_PCKT_LEN];
-    uint8_t packetLen;
-    this->frame(id, len, payload, packetLen, packet);
+    Packet packet {};
+    packet.id = id;
+    packet.payload_len = len;
+    memcpy(packet.payload, payload, len);
+    Frame frame = build_frame(packet);
+
     // Place packet in send queue
-    uint8_t queueIndex = _sendQueueLen;
-    for (uint8_t i = 0; i < packetLen; i++) {
-        // Copy data to array
-        _sendQueue[queueIndex][i] = packet[i];
-    }
-    _sendQueueLengths[queueIndex] = packetLen;
-    _sendQueueLen++;
+    send_queue.push(frame);
 }
 
 /*
  * Converts float to 4 bytes and sends using send().
  */
-void SimpleSerial::sendFloat(uint8_t id, float f) {
+void SimpleSerial::send_float(uint8_t id, float f) {
     union u {
         float _f = 0.;
         uint8_t b[4];
@@ -53,7 +40,7 @@ void SimpleSerial::sendFloat(uint8_t id, float f) {
 /*
  * Converts int to 4 bytes and sends using send();
  */
-void SimpleSerial::sendInt(uint8_t id, int32_t i) {
+void SimpleSerial::send_int(uint8_t id, int32_t i) {
     union u {
         int32_t _i = 0;
         uint8_t b[4];
@@ -65,109 +52,100 @@ void SimpleSerial::sendInt(uint8_t id, int32_t i) {
 /*
  * Frames array of bytes into a packet. Inserts flag bytes, id and length.
  */
-void SimpleSerial::frame(uint8_t id, uint8_t payloadLen, uint8_t payload[],
-                         uint8_t &packetLen, uint8_t packet[]) {
+SimpleSerial::Frame SimpleSerial::build_frame(Packet packet) {
+    uint8_t id = packet.id;
+    uint8_t payload_len = packet.payload_len;
+    uint8_t *payload = packet.payload;
 
     // Calculate CRC
-    uint8_t crc = calcCRC(payload, payloadLen);
+    uint8_t crc = calc_CRC(payload, payload_len);
 
     // Extend array to make place for CRC
-    uint8_t payloadNew[payloadLen + 1];
-    for (uint8_t k = 0; k < payloadLen; ++k) {
-        payloadNew[k] = payload[k];
+    uint8_t payload_new[payload_len + 1];
+    for (uint8_t k = 0; k < payload_len; ++k) {
+        payload_new[k] = payload[k];
     }
-    payload = payloadNew;
-    payloadLen++;
+    payload = payload_new;
+    payload_len++;
 
     // Insert CRC byte to the end of payload
-    payload[payloadLen - 1] = crc;
+    payload[payload_len - 1] = crc;
+
+    Frame frame {};
 
     // Insert ESC flags
-    uint8_t i = 0; // payload index
-    uint8_t j = 0; // packet index
-    packet[0] = START;
-    packet[1] = 0; // packet length
-    packet[2] = id;
+    uint8_t i = 0; // payload byte index
+    uint8_t j = 0; // packet byte index
+    frame.data[0] = start_flag;
+    frame.data[1] = 0; // packet length
+    frame.data[2] = id;
     j = 3;
-    while (i < payloadLen) {
+    while (i < payload_len) {
         uint8_t b = payload[i];
-        if (b == ESC || b == START || b == END) {
+        if (b == esc_flag || b == start_flag || b == end_flag) {
             // Must insert ESC flag
-            packet[j] = ESC;
+            frame.data[j] = esc_flag;
             j++;
         }
-        packet[j] = b;
+        frame.data[j] = b;
         j++;
         i++;
     }
-    packet[j] = END;
+    frame.data[j] = end_flag;
     j++;
-    packet[1] = j; //packet length
-    packetLen = j;
+    frame.data[1] = j; //packet length
+    frame.len = j;
+    return frame;
 }
 
 /*
  * Continuously running loop. Sends the next packet in send queue.
  */
-void SimpleSerial::sendLoop(uint32_t time) {
-    if (_sendQueueLen < 1)
+void SimpleSerial::send_loop() {
+    if (send_queue.count() <= 0)
         // Return if nothing to send
         return;
-    // Loop through waiting packets
     else {
         // Send packet
-        uint8_t i = _sendQueueLen - 1;
-        _writeFun(_sendQueue[i], _sendQueueLengths[i]);
-        _sendQueueLen--;
+        Frame frame = send_queue.pop();
+        serial_->write(frame.data, frame.len);
         }
 }
 
 /*
  * Returns and removes the oldest packet in the read queue.
  */
-void SimpleSerial::read(uint8_t &id, uint8_t &len, uint8_t payload[]) {
-    id = _readQueueIDs[0];
-    len = _readQueueLengths[0];
-    // Copy from read queue
-    for (uint8_t i = 0; i < len; i++) {
-        payload[i] = _readQueue[0][i];
-    }
-    _readQueueLen--;
-    // Shift read list forward.
-    for (uint8_t i = 0; i < _readQueueLen; i++) {
-        for (uint8_t j = 0; j < _readQueueLengths[i]; j++) {
-            _readQueue[i][j] = _readQueue[i + 1][j];
-        }
-    }
+SimpleSerial::Packet SimpleSerial::read() {
+    return receive_queue.pop();
 }
 
-float SimpleSerial::bytes2Float(uint8_t bytes[]) {
+float SimpleSerial::bytes_2_float(uint8_t const *bytes) {
     union u {
         float _f;
         uint8_t b[4];
-    } u;
+    } u {};
     for (uint8_t i = 0; i < 4; i++) {
         u.b[i] = bytes[i];
     }
     return u._f;
 }
 
-void SimpleSerial::float2Bytes(float f, uint8_t bytes[]) {
+void SimpleSerial::float_2_bytes(float f, uint8_t *bytes) {
     union u {
         float _f;
         uint8_t b[4];
-    } u;
+    } u {};
     u._f = f;
     for (uint8_t i = 0; i < 4; i++) {
         bytes[i] = u.b[i];
     }
 }
 
-int16_t SimpleSerial::bytes2Int(uint8_t bytes[]) {
+int16_t SimpleSerial::bytes_2_int(uint8_t const *bytes) {
     union u {
-        int16_t _i;
+        int32_t _i;
         uint8_t b[4];
-    } u;
+    } u {};
     for (uint8_t i = 0; i < 4; i++) {
         u.b[i] = bytes[i];
     }
@@ -175,11 +153,11 @@ int16_t SimpleSerial::bytes2Int(uint8_t bytes[]) {
     return u._i;
 }
 
-void SimpleSerial::int2Bytes(int32_t i, uint8_t bytes[]) {
+void SimpleSerial::int_2_bytes(int32_t i, uint8_t *bytes) {
     union u {
         int32_t _i;
         uint8_t b[4];
-    } u;
+    } u {};
     u._i = i;
     for (uint8_t i = 0; i < 4; i++) {
         bytes[i] = u.b[i];
@@ -188,23 +166,25 @@ void SimpleSerial::int2Bytes(int32_t i, uint8_t bytes[]) {
 
 /*
  * Continuously running loop. Waits for bytes as they arrive and
- * decodes the packet. Reads READ_BYTES_NR in one iteration.
+ * decodes the packet. Reads *read_num_bytes* in one iteration.
  */
-void SimpleSerial::readLoop(uint32_t time) {
-    for (int k = 0; k < READ_BYTES_NR; ++k) {
+void SimpleSerial::read_loop() {
+    for (uint8_t k = 0; k < read_num_bytes; ++k) {
 
-        if (!_availableFun())
+        uint32_t time = sys_time();
+
+        if (!serial_->available())
             return;
         static uint8_t i = 0; // Byte counter
         static uint8_t l = 0; // Packet length
-        static uint8_t id = 0; //Packet id
+        static uint8_t id = 0; // Packet id
         static bool esc = false;
-        static uint8_t payload[MAX_LEN_PYLD];
+        static uint8_t payload[max_payload_len];
         static uint8_t payload_i = 0;
         static uint32_t startTime = time;
 
-        uint8_t b = _readFun();
-        if (i == 0 && b == START) {
+        uint8_t b = serial_->read();
+        if (i == 0 && b == start_flag) {
             // First byte - START flag. Start count.
             startTime = time;
             i = 1;
@@ -219,41 +199,30 @@ void SimpleSerial::readLoop(uint32_t time) {
             i = 3;
         } else if (i > 2) {
             // Data value byte
-            if (i > (2 * MAX_LEN_PYLD + 4) || (time - startTime) > PACKET_TIMEOUT) {
+            if (i > (2 * max_payload_len + 4) || (time - startTime) > receive_timeout) {
                 // No END flag. Reset.
                 i = 0;
                 return;
             }
             if (!esc) {
                 // No preceding ESC. Accept flags.
-                if (b == ESC)
+                if (b == esc_flag)
                     // ESC flag. Activate ESC mode.
                     esc = true;
-                else if (b == END) {
+                else if (b == end_flag) {
                     // End of packet. Check if specified and actual length are equal.
-                    uint8_t crcReceived = payload[payload_i - 1];
-                    uint8_t crcCalculated = calcCRC(payload, payload_i - 1);
+                    uint8_t crc_received = payload[payload_i - 1];
+                    uint8_t crc_calculated = calc_CRC(payload, payload_i - 1);
                     payload_i--;
 
-                    if ((i == l - 1) && (crcReceived == crcCalculated)) {
+                    if ((i == l - 1) && (crc_received == crc_calculated)) {
                         // Valid data. Add to read queue.
-                        if (_readQueueLen >= QUEUE_LEN) {
-                            // Queue full. Delete oldest value
-                            // Shift read list forward.
-                            for (uint8_t i = 0; i < _readQueueLen; i++) {
-                                for (uint8_t j = 0; j < _readQueueLengths[i]; j++) {
-                                    _readQueue[i][j] = _readQueue[i + 1][j];
-                                }
-                            }
-                            _readQueueLen--;
-                        }
-                        uint8_t queueIndex = _readQueueLen;
-                        for (uint8_t i = 0; i < payload_i; i++) {
-                            _readQueue[queueIndex][i] = payload[i];
-                        }
-                        _readQueueLengths[queueIndex] = payload_i;
-                        _readQueueIDs[queueIndex] = id;
-                        _readQueueLen++;
+                        Packet packet {id, payload_i, 0};
+                        packet.id = id;
+                        packet.payload_len = payload_i;
+                        memcpy(packet.payload, payload, payload_i);
+                        // Packet packet = Packet{12, 4, *payload};
+                        receive_queue.push(packet);
                         i = 0;
                     } else {
                         // CORRUPTED data. Reset
@@ -277,19 +246,33 @@ void SimpleSerial::readLoop(uint32_t time) {
     }
 }
 
-void SimpleSerial::loop(uint32_t time) {
-    sendLoop(time);
-    readLoop(time);
+void SimpleSerial::loop() {
+    send_loop();
+    read_loop();
 }
 
-void SimpleSerial::confirmReceived(uint8_t id) {
-    uint8_t pld[] = {255};
-    send(id, 1, pld);
+void SimpleSerial::confirm_received(uint8_t id) {
+    uint8_t pld[] = "ok";
+    send(id, 2, pld);
+}
+
+/*
+ * Return system time if time_getter function is set, otherwise return 0.
+ */
+uint32_t SimpleSerial::sys_time() {
+    uint32_t time;
+    if(time_getter) {
+        time = time_getter();
+    }
+    else {
+        time = 0;
+    }
+    return time;
 }
 
 // Automatically generated CRC function from python crcmod
 // CRC-8; polynomial: 0x107
-uint8_t SimpleSerial::calcCRC(uint8_t *data, int len)
+uint8_t SimpleSerial::calc_CRC(uint8_t *data, uint8_t len)
 {
     static const uint8_t table[256] = {
             0x00U,0x07U,0x0EU,0x09U,0x1CU,0x1BU,0x12U,0x15U,

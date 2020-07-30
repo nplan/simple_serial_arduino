@@ -1,35 +1,29 @@
-#include "SimpleSerial.h"
+/*
+* Inteprets received payload as a float and replies using same id with a 10x multiple.
+*/
 
-SimpleSerial ss([]{Serial.available();},
-                []{Serial.read();},
-                [](uint8_t* buf, uint8_t len){Serial.write(buf, len);});
+// Set simple serial parameters before including
+#define SIMPLE_SERIAL_MAX_PAYLOAD_LEN 16
+#define SIMPLE_SERIAL_MAX_Q_LEN   8
+
+#include <SimpleSerial.h>
+
+SimpleSerial ss(&Serial, millis);
 
 void setup() {
   Serial.begin(115200);
+
   delay(100);
+
 }
 
 void loop() {
   delay(10);
-  ss.loop(millis());
+  ss.loop();
   if (ss.available()) {
-    uint8_t payload[MAX_LEN_PYLD];
-    uint8_t id;
-    uint8_t len;
-    ss.read(id, len, payload);
-    float n = ss.bytes2Float(len, payload);
-    ss.sendFloat(id, n*10.);
+    SimpleSerial::Packet packet = ss.read();
+    float f = ss.bytes_2_float(packet.payload);
+    float reply = f * 10.;
+    ss.send_float(packet.id, reply);
   }
-}
-
-bool available(void) {
-  return Serial.available();
-}
-
-uint8_t read(void) {
-  return Serial.read();  
-}
-
-uint8_t write(uint8_t* buf, uint8_t len) {
-  return Serial.write(buf, len);
 }
