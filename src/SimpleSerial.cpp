@@ -262,7 +262,7 @@ void SimpleSerial::confirm_received(uint8_t id) {
 uint32_t SimpleSerial::sys_time() {
     uint32_t time;
     if(time_getter) {
-        time = time_getter();
+        time = (uint32_t) time_getter();
     }
     else {
         time = 0;

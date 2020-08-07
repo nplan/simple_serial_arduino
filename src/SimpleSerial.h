@@ -49,7 +49,7 @@ public:
     * */
     template <class T>
     explicit SimpleSerial(T* serial, //< serial interface.
-            uint32_t (*time_getter)() = nullptr, // function that returns system time in ms. like millis().
+            unsigned long (*time_getter)() = nullptr, // function that returns system time in ms. like millis().
             const uint16_t receive_timeout = 1000, // [ms] time after which packet is discarded if transmission stops 
             const uint8_t read_num_bytes = 8, // number of bytes to read from serial interface in one loop
             const uint8_t esc_flag = 1,
@@ -131,7 +131,7 @@ private:
     void send_loop();
 
 
-    uint32_t (*time_getter)() = nullptr;
+    unsigned long (*time_getter)() = nullptr;
     uint32_t sys_time();
 
 };

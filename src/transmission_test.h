@@ -35,18 +35,21 @@ void transmission_test(SimpleSerial &ss) {
     {
     // Test suite version
     case 1: {
-        ss.send(1, 4, "v0.1");
+        uint8_t pld[] = "v0.1";
+        ss.send(1, 4, pld);
         break;
     }
     // Test 1
     case 11: {
         uint8_t b[] = {0};
         if (packet.payload_len == 1 && compare_arrays(packet.payload, b, 1)) {
-            ss.send(packet.id, 2, "ok");
+            uint8_t pld[] = "ok";
+            ss.send(packet.id, 2, pld);
         }
         else
         {
-            ss.send(packet.id, 4, "fail");
+            uint8_t pld[] = "fail";
+            ss.send(packet.id, 4, pld);
         }
         break;
     }
@@ -54,11 +57,13 @@ void transmission_test(SimpleSerial &ss) {
     case 12: {
         uint8_t b[] = "hello";
         if (packet.payload_len == 5 && compare_arrays(packet.payload, b, 5)) {
-            ss.send(packet.id, 2, "ok");
+            uint8_t pld[] = "ok";
+            ss.send(packet.id, 2, pld);
         }
         else
         {
-            ss.send(packet.id, 4, "fail");
+            uint8_t pld[] = "fail";
+            ss.send(packet.id, 4, pld);
         }
         break;
     }
@@ -66,11 +71,13 @@ void transmission_test(SimpleSerial &ss) {
     case 13: {
         int16_t i = 12345;
         if (packet.payload_len == 4 && ss.bytes_2_int(packet.payload) == i) {
-            ss.send(packet.id, 2, "ok");
+            uint8_t pld[] = "ok";
+            ss.send(packet.id, 2, pld);
         }
         else
         {
-            ss.send(packet.id, 4, "fail");
+            uint8_t pld[] = "fail";
+            ss.send(packet.id, 4, pld);
         }
         break;
     }
@@ -78,11 +85,13 @@ void transmission_test(SimpleSerial &ss) {
     case 14: {
         int16_t i = -4321;
         if (packet.payload_len == 4 && ss.bytes_2_int(packet.payload) == i) {
-            ss.send(packet.id, 2, "ok");
+            uint8_t pld[] = "ok";
+            ss.send(packet.id, 2, pld);
         }
         else
         {
-            ss.send(packet.id, 4, "fail");
+            uint8_t pld[] = "fail";
+            ss.send(packet.id, 4, pld);
         }
         break;
     }
@@ -90,11 +99,13 @@ void transmission_test(SimpleSerial &ss) {
     case 15: {
         float f = 4.321;
         if (packet.payload_len == 4 && is_close(ss.bytes_2_float(packet.payload), f, 1e-5)) {
-            ss.send(packet.id, 2, "ok");
+            uint8_t pld[] = "ok";
+            ss.send(packet.id, 2, pld);
         }
         else
         {
-            ss.send(packet.id, 4, "fail");
+            uint8_t pld[] = "fail";
+            ss.send(packet.id, 4, pld);
         }
         break;
     }
@@ -102,11 +113,13 @@ void transmission_test(SimpleSerial &ss) {
     case 16: {
         float f = -123.4;
         if (packet.payload_len == 4 && is_close(ss.bytes_2_float(packet.payload), f, 1e-5)) {
-            ss.send(packet.id, 2, "ok");
+            uint8_t pld[] = "ok";
+            ss.send(packet.id, 2, pld);
         }
         else
         {
-            ss.send(packet.id, 4, "fail");
+            uint8_t pld[] = "fail";
+            ss.send(packet.id, 4, pld);
         }
         break;
     }
@@ -114,11 +127,13 @@ void transmission_test(SimpleSerial &ss) {
     case 17: {
         uint8_t b[] = {ss.start_flag, ss.esc_flag, ss.end_flag};
         if (packet.payload_len == 3 && compare_arrays(packet.payload, b, 3)) {
-            ss.send(packet.id, 2, "ok");
+            uint8_t pld[] = "ok";
+            ss.send(packet.id, 2, pld);
         }
         else
         {
-            ss.send(packet.id, 4, "fail");
+            uint8_t pld[] = "fail";
+            ss.send(packet.id, 4, pld);
         }
         break;
     }
@@ -126,11 +141,13 @@ void transmission_test(SimpleSerial &ss) {
     case 18: {
         uint8_t b[] = "hello";
         if (packet.payload_len == 5 && compare_arrays(packet.payload, b, 5)) {
-            ss.send(packet.id, 5, "world");
+            uint8_t pld[] = "world";
+            ss.send(packet.id, 5, pld);
         }
         else
         {
-            ss.send(packet.id, 4, "fail");
+            uint8_t pld[] = "fail";
+            ss.send(packet.id, 4, pld);
         }
         break;
     }
