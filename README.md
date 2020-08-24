@@ -35,15 +35,14 @@ is used for identifying topic and data type of the packet. The library does not 
 User must keep track of this.
 
 Buffer sizes for sending / receiving packets are set at compile time to make sure library works reliably on limited hardware.
-Your should set them based on your needs before inluding the library in your code:
+Your should set them based on your needs by editing the library source code in `SimpleSerial.h`:
 
 ```c++
-#define SIMPLE_SERIAL_MAX_PAYLOAD_LEN 16
-#define SIMPLE_SERIAL_MAX_Q_LEN   8
-#include <SimpleSerial.h>
+#define MAX_PAYLOAD_LEN 16
+#define MAX_QUEUE_LEN   8
 ```
 
-Alternatively you can change the sizes by editing source code (not recommended for Arduino installation).
+Example:
 
 ```c++
 #include <SimpleSerial.h>
@@ -103,7 +102,7 @@ Serial port is being monitored for incoming packets using ```SimpleSerial::read_
 The function reads incoming packet frames byte by byte. When a complete packet frame is received, it is placed
 into **read queue**. Packets are retrieved from this queue with function ```SimpleSerial::read()```.
 
-The length of send and read queues is set by define ```SIMPLE_SERIAL_MAX_Q_LEN```.
+The length of send and read queues is set by define ```MAX_Q_LEN```.
 If a queue is full, packets are discarded (not sent or not received).
 
 ## Testing

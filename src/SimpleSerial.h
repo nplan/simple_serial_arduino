@@ -6,24 +6,18 @@
 #define SimpleSerial_h
 
 #include <stdint.h>
-
-#ifndef SIMPLE_SERIAL_MAX_PAYLOAD_LEN
-#define SIMPLE_SERIAL_MAX_PAYLOAD_LEN 16
-#endif
-
-#ifndef SIMPLE_SERIAL_MAX_Q_LEN
-#define SIMPLE_SERIAL_MAX_Q_LEN   8
-#endif
-
-#define QUEUE_MAXITEMS SIMPLE_SERIAL_MAX_Q_LEN
 #include "Queue.h"
+
+#define MAX_PAYLOAD_LEN 16
+#define MAX_QUEUE_LEN   8
+
 
 class SimpleSerial {
 public:
-    static const uint16_t max_payload_len = SIMPLE_SERIAL_MAX_PAYLOAD_LEN;
-    static const uint16_t max_packet_len = 2 * SIMPLE_SERIAL_MAX_PAYLOAD_LEN; // Maximum frame length
-    static const uint16_t max_rec_q_len = SIMPLE_SERIAL_MAX_Q_LEN; // Receive queue length
-    static const uint16_t max_send_q_len = SIMPLE_SERIAL_MAX_Q_LEN; // Send queue length
+    static const uint16_t max_payload_len = MAX_PAYLOAD_LEN;
+    static const uint16_t max_frame_len = 2 * MAX_PAYLOAD_LEN + 4; // Maximum frame length
+    static const uint16_t max_rec_q_len = MAX_QUEUE_LEN; // Receive queue length
+    static const uint16_t max_send_q_len = MAX_QUEUE_LEN; // Send queue length
 
     const uint16_t receive_timeout;   // Packet receive timeout
     const uint8_t read_num_bytes;    // number of bytes to read in single readLoop()
@@ -65,7 +59,7 @@ public:
             {};
     SimpleSerial(const SimpleSerial&) = delete; // delete copy constructor
 
-    // Retruns true if packets are available to read
+    // Returns true if packets are available to read
     bool available();
 
     // Return a packet from receive queue
@@ -117,12 +111,12 @@ private:
     // Frame structure
     struct Frame {
         uint8_t len;
-        uint8_t data[max_packet_len];
+        uint8_t data[max_frame_len];
     };
 
     // Send / receive queues
-    Queue<Frame> send_queue = Queue<Frame>(max_send_q_len);
-    Queue<Packet> receive_queue = Queue<Packet>(max_rec_q_len);
+    Queue<Frame, max_send_q_len> send_queue;
+    Queue<Packet, max_rec_q_len> receive_queue;
 
     static uint8_t calc_CRC(uint8_t *data, uint8_t len);
     Frame build_frame(Packet packet);

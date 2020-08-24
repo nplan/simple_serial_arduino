@@ -199,7 +199,7 @@ void SimpleSerial::read_loop() {
             i = 3;
         } else if (i > 2) {
             // Data value byte
-            if (i > (2 * max_payload_len + 4) || (time - startTime) > receive_timeout) {
+            if (i > (max_frame_len) || (time - startTime) > receive_timeout) {
                 // No END flag. Reset.
                 i = 0;
                 return;

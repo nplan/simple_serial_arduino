@@ -2,10 +2,6 @@
 * Inteprets received payload as a float and replies using same id with a 10x multiple.
 */
 
-// Set simple serial parameters before including
-#define SIMPLE_SERIAL_MAX_PAYLOAD_LEN 16
-#define SIMPLE_SERIAL_MAX_Q_LEN   8
-
 #include <SimpleSerial.h>
 
 SimpleSerial ss(&Serial, millis);

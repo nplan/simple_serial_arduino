@@ -35,58 +35,46 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#ifndef QUEUE_MAXITEMS
-#define QUEUE_MAXITEMS 8
-#endif
-
 #include <stdint.h>
 
-template<class T>
+template<class T, int N>
 class Queue {
 private:
-    uint16_t front_, back_, count_;
-    T data_[QUEUE_MAXITEMS + 1];
-    uint16_t maxitems_;
+    uint16_t front_ = 0;
+    uint16_t back_ = 0;
+    uint16_t count_ = 0;
+    uint16_t maxitems_ = N;
+    T data_[N + 1];
 public:
-    explicit Queue(uint16_t maxitems = 8) {
-        front_ = 0;
-        back_ = 0;
-        count_ = 0;
-        maxitems_ = maxitems;
-        // data_ = T[QUEUE_MAXITEMS + 1];
-    }
-    ~Queue() {
-        delete[] data_;
-    }
-    inline uint16_t count();
-    inline uint16_t front();
-    inline uint16_t back();
+    uint16_t count();
+    uint16_t front();
+    uint16_t back();
     void push(const T &item);
     T peek();
     T pop();
     void clear();
 };
 
-template<class T>
-inline uint16_t Queue<T>::count()
+template<class T, int N>
+inline uint16_t Queue<T, N>::count()
 {
     return count_;
 }
 
-template<class T>
-inline uint16_t Queue<T>::front()
+template<class T, int N>
+inline uint16_t Queue<T, N>::front()
 {
     return front_;
 }
 
-template<class T>
-inline uint16_t Queue<T>::back()
+template<class T, int N>
+inline uint16_t Queue<T, N>::back()
 {
     return back_;
 }
 
-template<class T>
-void Queue<T>::push(const T &item)
+template<class T, int N>
+void Queue<T, N>::push(const T &item)
 {
     if(count_ < maxitems_) { // Drops out when full
         data_[back_++]=item;
@@ -97,8 +85,8 @@ void Queue<T>::push(const T &item)
     }
 }
 
-template<class T>
-T Queue<T>::pop() {
+template<class T, int N>
+T Queue<T, N>::pop() {
     if(count_ <= 0) return T(); // Returns empty
     else {
         T result = data_[front_];
@@ -111,14 +99,14 @@ T Queue<T>::pop() {
     }
 }
 
-template<class T>
-T Queue<T>::peek() {
+template<class T, int N>
+T Queue<T, N>::peek() {
     if(count_ <= 0) return T(); // Returns empty
     else return data_[front_];
 }
 
-template<class T>
-void Queue<T>::clear()
+template<class T, int N>
+void Queue<T, N>::clear()
 {
     front_ = back_;
     count_ = 0;
