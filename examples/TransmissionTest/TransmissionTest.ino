@@ -9,7 +9,7 @@
 #include <SoftwareSerial.h>
 #include "transmission_test.h"
 
-SimpleSerial ss(&Serial, millis);
+SimpleSerial ss(&Serial);
 SoftwareSerial ser(12, 13);
 
 void setup() {

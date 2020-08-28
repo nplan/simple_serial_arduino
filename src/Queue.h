@@ -37,15 +37,22 @@
 
 #include <stdint.h>
 
-template<class T, int N>
+template<class T>
 class Queue {
 private:
-    uint16_t front_ = 0;
-    uint16_t back_ = 0;
-    uint16_t count_ = 0;
-    uint16_t maxitems_ = N;
-    T data_[N + 1];
+    uint16_t front_, back_, count_, maxitems_;
+    T *data_;
 public:
+    explicit Queue(uint16_t maxitems)
+        : front_(0)
+        , back_(0)
+        , count_(0)
+        , maxitems_(maxitems)
+        , data_(new T[maxitems_])
+        {}
+    ~Queue() {
+        delete [] data_;
+    }
     uint16_t count();
     uint16_t front();
     uint16_t back();
@@ -55,26 +62,26 @@ public:
     void clear();
 };
 
-template<class T, int N>
-inline uint16_t Queue<T, N>::count()
+template<class T>
+inline uint16_t Queue<T>::count()
 {
     return count_;
 }
 
-template<class T, int N>
-inline uint16_t Queue<T, N>::front()
+template<class T>
+inline uint16_t Queue<T>::front()
 {
     return front_;
 }
 
-template<class T, int N>
-inline uint16_t Queue<T, N>::back()
+template<class T>
+inline uint16_t Queue<T>::back()
 {
     return back_;
 }
 
-template<class T, int N>
-void Queue<T, N>::push(const T &item)
+template<class T>
+void Queue<T>::push(const T &item)
 {
     if(count_ < maxitems_) { // Drops out when full
         data_[back_++]=item;
@@ -85,8 +92,8 @@ void Queue<T, N>::push(const T &item)
     }
 }
 
-template<class T, int N>
-T Queue<T, N>::pop() {
+template<class T>
+T Queue<T>::pop() {
     if(count_ <= 0) return T(); // Returns empty
     else {
         T result = data_[front_];
@@ -99,14 +106,14 @@ T Queue<T, N>::pop() {
     }
 }
 
-template<class T, int N>
-T Queue<T, N>::peek() {
+template<class T>
+T Queue<T>::peek() {
     if(count_ <= 0) return T(); // Returns empty
     else return data_[front_];
 }
 
-template<class T, int N>
-void Queue<T, N>::clear()
+template<class T>
+void Queue<T>::clear()
 {
     front_ = back_;
     count_ = 0;

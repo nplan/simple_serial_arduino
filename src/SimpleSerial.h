@@ -6,18 +6,14 @@
 #define SimpleSerial_h
 
 #include <stdint.h>
+#include <string.h>
 #include "Queue.h"
-
-#define MAX_PAYLOAD_LEN 16
-#define MAX_QUEUE_LEN   8
 
 
 class SimpleSerial {
 public:
-    static const uint16_t max_payload_len = MAX_PAYLOAD_LEN;
-    static const uint16_t max_frame_len = 2 * MAX_PAYLOAD_LEN + 4; // Maximum frame length
-    static const uint16_t max_rec_q_len = MAX_QUEUE_LEN; // Receive queue length
-    static const uint16_t max_send_q_len = MAX_QUEUE_LEN; // Send queue length
+    const uint16_t max_payload_len_;
+    const uint16_t max_frame_len_ = 2 * max_payload_len_ + 4; // Maximum frame length
 
     const uint16_t receive_timeout;   // Packet receive timeout
     const uint8_t read_num_bytes;    // number of bytes to read in single readLoop()
@@ -30,7 +26,20 @@ public:
     struct Packet {
         uint8_t id;
         uint8_t payload_len;
-        uint8_t payload[max_payload_len];
+        uint8_t *payload;
+    public:
+        Packet() = default;
+        Packet(uint8_t id, uint8_t payload_len)
+                : id(id)
+                , payload_len(payload_len)
+                , payload(new uint8_t[payload_len+1])
+        {}
+        Packet(uint8_t id, uint8_t payload_len, const uint8_t *payload)
+            : id(id)
+            , payload_len(payload_len)
+            , payload(new uint8_t[payload_len+1])
+            {memcpy(this->payload, payload, payload_len);}
+        ~Packet() {delete [] payload;}
     };
 
     /*
@@ -42,22 +51,31 @@ public:
     * Other arguments are optional.
     * */
     template <class T>
-    explicit SimpleSerial(T* serial, //< serial interface.
+    explicit SimpleSerial(T* serial, // serial interface.
+            uint16_t max_payload_len = 16, // max payload len
+            uint16_t max_queue_len = 8, // max send/receive queue len
             unsigned long (*time_getter)() = nullptr, // function that returns system time in ms. like millis().
-            const uint16_t receive_timeout = 1000, // [ms] time after which packet is discarded if transmission stops 
-            const uint8_t read_num_bytes = 8, // number of bytes to read from serial interface in one loop
+            const uint16_t receive_timeout = 500, // [ms] time after which packet is discarded if transmission stops
+            const uint8_t read_num_bytes = 4, // number of bytes to read from serial interface in one loop
             const uint8_t esc_flag = 1,
             const uint8_t start_flag = 2,
             const uint8_t end_flag = 3)
                 : serial_(new SerialModel<T>(serial))
+                , max_payload_len_(max_payload_len)
                 , time_getter(time_getter)
                 , receive_timeout(receive_timeout)
                 , read_num_bytes(read_num_bytes)
                 , esc_flag(esc_flag)
                 , start_flag(start_flag)
                 , end_flag(end_flag)
+                , incoming_payload_(new uint8_t[max_payload_len])
+                , receive_queue(max_queue_len)
+                , send_queue(max_queue_len)
             {};
     SimpleSerial(const SimpleSerial&) = delete; // delete copy constructor
+    ~SimpleSerial() {
+        delete [] incoming_payload_;
+    };
 
     // Returns true if packets are available to read
     bool available();
@@ -79,12 +97,6 @@ public:
 
     // Sends "ok" as payload
     void confirm_received(uint8_t id);
-
-    // Conversions between bytes and int, folat
-    static float bytes_2_float(uint8_t const *bytes);
-    static void float_2_bytes(float f, uint8_t *bytes);
-    static int16_t bytes_2_int(uint8_t const *bytes);
-    static void int_2_bytes(int32_t i, uint8_t *bytes);
 
 private:
     // Using type erasure pattern for serial interface
@@ -111,12 +123,24 @@ private:
     // Frame structure
     struct Frame {
         uint8_t len;
-        uint8_t data[max_frame_len];
+        uint8_t *data;
+    public:
+        Frame() = default;
+        explicit Frame(uint8_t len)
+                : len(len)
+                , data(new uint8_t[len+1])
+        {}
+        Frame(uint8_t len, const uint8_t *data)
+            : len(len)
+            , data(new uint8_t[len+1])
+            {memcpy(this->data, data, len);}
+
+        ~Frame() {delete [] data;}
     };
 
     // Send / receive queues
-    Queue<Frame, max_send_q_len> send_queue;
-    Queue<Packet, max_rec_q_len> receive_queue;
+    Queue<Frame> send_queue;
+    Queue<Packet> receive_queue;
 
     static uint8_t calc_CRC(uint8_t *data, uint8_t len);
     Frame build_frame(Packet packet);
@@ -124,10 +148,20 @@ private:
     void read_loop();
     void send_loop();
 
+    uint8_t *incoming_payload_;
 
     unsigned long (*time_getter)() = nullptr;
     uint32_t sys_time();
 
 };
+
+// Conversions between bytes and int, folat
+namespace byte_conversion {
+    float bytes_2_float(uint8_t const *bytes);
+    void float_2_bytes(float f, uint8_t *bytes);
+    int32_t bytes_2_int(uint8_t const *bytes);
+    void int_2_bytes(int32_t i, uint8_t *bytes);
+}
+
 
 #endif

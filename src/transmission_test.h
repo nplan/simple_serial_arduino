@@ -70,7 +70,7 @@ void transmission_test(SimpleSerial &ss) {
     // Test 3
     case 13: {
         int16_t i = 12345;
-        if (packet.payload_len == 4 && ss.bytes_2_int(packet.payload) == i) {
+        if (packet.payload_len == 4 && byte_conversion::bytes_2_int(packet.payload) == i) {
             uint8_t pld[] = "ok";
             ss.send(packet.id, 2, pld);
         }
@@ -84,7 +84,7 @@ void transmission_test(SimpleSerial &ss) {
     // Test 4
     case 14: {
         int16_t i = -4321;
-        if (packet.payload_len == 4 && ss.bytes_2_int(packet.payload) == i) {
+        if (packet.payload_len == 4 && byte_conversion::bytes_2_int(packet.payload) == i) {
             uint8_t pld[] = "ok";
             ss.send(packet.id, 2, pld);
         }
@@ -98,7 +98,7 @@ void transmission_test(SimpleSerial &ss) {
     // Test 5
     case 15: {
         float f = 4.321;
-        if (packet.payload_len == 4 && is_close(ss.bytes_2_float(packet.payload), f, 1e-5)) {
+        if (packet.payload_len == 4 && is_close(byte_conversion::bytes_2_float(packet.payload), f, 1e-5)) {
             uint8_t pld[] = "ok";
             ss.send(packet.id, 2, pld);
         }
@@ -112,7 +112,7 @@ void transmission_test(SimpleSerial &ss) {
     // Test 6
     case 16: {
         float f = -123.4;
-        if (packet.payload_len == 4 && is_close(ss.bytes_2_float(packet.payload), f, 1e-5)) {
+        if (packet.payload_len == 4 && is_close(byte_conversion::bytes_2_float(packet.payload), f, 1e-5)) {
             uint8_t pld[] = "ok";
             ss.send(packet.id, 2, pld);
         }
@@ -153,11 +153,11 @@ void transmission_test(SimpleSerial &ss) {
     }
     // Test 9
     case 19: {
-        ss.send_int(packet.id, 2*ss.bytes_2_int(packet.payload));
+        ss.send_int(packet.id, 2*byte_conversion::bytes_2_int(packet.payload));
         break;
     }
     case 20: {
-        ss.send_float(packet.id, 2*ss.bytes_2_float(packet.payload));
+        ss.send_float(packet.id, 2*byte_conversion::bytes_2_float(packet.payload));
         break;
     }
     default:

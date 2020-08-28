@@ -4,7 +4,7 @@
 
 #include <SimpleSerial.h>
 
-SimpleSerial ss(&Serial, millis);
+SimpleSerial ss(&Serial);
 
 void setup() {
   Serial.begin(115200);

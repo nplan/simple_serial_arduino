@@ -34,14 +34,6 @@ Data is sent in packets. Each packet has an **id** in range *0 - 255*. The **id*
 is used for identifying topic and data type of the packet. The library does not know data type for a certain id.
 User must keep track of this.
 
-Buffer sizes for sending / receiving packets are set at compile time to make sure library works reliably on limited hardware.
-Your should set them based on your needs by editing the library source code in `SimpleSerial.h`:
-
-```c++
-#define MAX_PAYLOAD_LEN 16
-#define MAX_QUEUE_LEN   8
-```
-
 Example:
 
 ```c++
@@ -71,11 +63,11 @@ if (simple_ser.available()) {
 
   // Convert to desired type
   if (packet.id == 123) {
-    int val = simple_ser.bytes_2_int(packet.payload_len, packet.payload)
+    int val = byte_conversion::bytes_2_int(packet.payload_len, packet.payload)
     // do sth with val
   }
   // Note: there is no way to know the data type of payload.
-  // You should use id to keep track of this.
+  // You should use id to keep track of it.
 }
 ```
 
@@ -102,11 +94,11 @@ Serial port is being monitored for incoming packets using ```SimpleSerial::read_
 The function reads incoming packet frames byte by byte. When a complete packet frame is received, it is placed
 into **read queue**. Packets are retrieved from this queue with function ```SimpleSerial::read()```.
 
-The length of send and read queues is set by define ```MAX_Q_LEN```.
+The length of send and read queues is set by optional ```max_queue_len``` parameter.
 If a queue is full, packets are discarded (not sent or not received).
 
 ## Testing
 For testing the library you can use TransmissionTest.ino example or implement your own loop using `transmission_test.h`
 
-Test example is designed to evaluate and reply to packets sent from Python version of this library. You can use
+Test example is designed to evaluate packets sent from Python version of this library. You can use
 `python3 -m simple_serial.transmission_tester` to run the tests.
