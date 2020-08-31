@@ -28,18 +28,44 @@ public:
         uint8_t payload_len;
         uint8_t *payload;
     public:
-        Packet() = default;
+        Packet()
+            : id(0)
+            , payload_len(0)
+            , payload(new uint8_t[1])
+            {payload[0] = 0;}
         Packet(uint8_t id, uint8_t payload_len)
                 : id(id)
                 , payload_len(payload_len)
-                , payload(new uint8_t[payload_len+1])
+                , payload(new uint8_t[payload_len])
         {}
         Packet(uint8_t id, uint8_t payload_len, const uint8_t *payload)
             : id(id)
             , payload_len(payload_len)
-            , payload(new uint8_t[payload_len+1])
+            , payload(new uint8_t[payload_len])
             {memcpy(this->payload, payload, payload_len);}
         ~Packet() {delete [] payload;}
+        Packet(const Packet &old_packet) {
+            id = old_packet.id;
+            payload_len = old_packet.payload_len;
+            payload = new uint8_t[payload_len];
+            memcpy(payload, old_packet.payload, payload_len);
+        }
+        Packet(Packet&& old_packet) {
+            id = old_packet.id;
+            payload_len = old_packet.payload_len;
+            payload = old_packet.payload;
+            old_packet.payload = nullptr;
+        }
+        Packet& operator=(const Packet& rhs) {
+            if (this == &rhs)
+                return *this;
+            id = rhs.id;
+            payload_len = rhs.payload_len;
+            delete[] payload;
+            payload = new uint8_t[payload_len];
+            void * dest = memcpy(payload, rhs.payload, payload_len);
+            return *this;
+        }
     };
 
     /*
@@ -125,17 +151,39 @@ private:
         uint8_t len;
         uint8_t *data;
     public:
-        Frame() = default;
+        Frame()
+            : len(0)
+            , data(new uint8_t[1])
+            {data[0] = 0;}
         explicit Frame(uint8_t len)
                 : len(len)
-                , data(new uint8_t[len+1])
+                , data(new uint8_t[len])
         {}
         Frame(uint8_t len, const uint8_t *data)
             : len(len)
-            , data(new uint8_t[len+1])
+            , data(new uint8_t[len])
             {memcpy(this->data, data, len);}
 
         ~Frame() {delete [] data;}
+        Frame(const Frame& old_frame) {
+            len = old_frame.len;
+            data = new uint8_t[len];
+            memcpy(data, old_frame.data, len);
+        }
+        Frame(Frame&& old_frame) {
+            len = old_frame.len;
+            data = old_frame.data;
+            old_frame.data = nullptr;
+        }
+        Frame& operator=(const Frame& rhs){
+            if (this == &rhs)
+                return *this;
+            len = rhs.len;
+            delete[] data;
+            data = new uint8_t[rhs.len];
+            memcpy(data, rhs.data, len);
+            return *this;
+        }
     };
 
     // Send / receive queues

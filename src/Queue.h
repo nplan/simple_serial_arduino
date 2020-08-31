@@ -48,7 +48,7 @@ public:
         , back_(0)
         , count_(0)
         , maxitems_(maxitems)
-        , data_(new T[maxitems_])
+        , data_(new T[maxitems_+1])
         {}
     ~Queue() {
         delete [] data_;

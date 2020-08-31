@@ -12,7 +12,7 @@ bool SimpleSerial::available() {
  * Takes payload (in bytes) and its id, frames it into a packet, and places it
  * in send queue.
  */
-void SimpleSerial::send(uint8_t id, uint8_t len, uint8_t const payload[]) {
+void SimpleSerial::send(uint8_t id, uint8_t len, uint8_t const *payload) {
 
     // Frame packet
     Packet packet(id, len, payload);
