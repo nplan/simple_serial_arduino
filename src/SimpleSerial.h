@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "Queue.h"
+#include "SimpleQueue.h"
 
 
 class SimpleSerial {
@@ -187,8 +187,8 @@ private:
     };
 
     // Send / receive queues
-    Queue<Frame> send_queue;
-    Queue<Packet> receive_queue;
+    SimpleQueue<Frame> send_queue;
+    SimpleQueue<Packet> receive_queue;
 
     static uint8_t calc_CRC(uint8_t *data, uint8_t len);
     Frame build_frame(Packet packet);

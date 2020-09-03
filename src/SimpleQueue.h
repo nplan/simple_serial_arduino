@@ -32,25 +32,25 @@
  *
  */
 
-#ifndef QUEUE_H
-#define QUEUE_H
+#ifndef SIMPLE_QUEUE_H
+#define SIMPLE_QUEUE_H
 
 #include <stdint.h>
 
 template<class T>
-class Queue {
+class SimpleQueue {
 private:
     uint16_t front_, back_, count_, maxitems_;
     T *data_;
 public:
-    explicit Queue(uint16_t maxitems)
+    explicit SimpleQueue(uint16_t maxitems)
         : front_(0)
         , back_(0)
         , count_(0)
         , maxitems_(maxitems)
         , data_(new T[maxitems_+1])
         {}
-    ~Queue() {
+    ~SimpleQueue() {
         delete [] data_;
     }
     uint16_t count();
@@ -63,25 +63,25 @@ public:
 };
 
 template<class T>
-inline uint16_t Queue<T>::count()
+inline uint16_t SimpleQueue<T>::count()
 {
     return count_;
 }
 
 template<class T>
-inline uint16_t Queue<T>::front()
+inline uint16_t SimpleQueue<T>::front()
 {
     return front_;
 }
 
 template<class T>
-inline uint16_t Queue<T>::back()
+inline uint16_t SimpleQueue<T>::back()
 {
     return back_;
 }
 
 template<class T>
-void Queue<T>::push(const T &item)
+void SimpleQueue<T>::push(const T &item)
 {
     if(count_ < maxitems_) { // Drops out when full
         data_[back_++]=item;
@@ -93,7 +93,7 @@ void Queue<T>::push(const T &item)
 }
 
 template<class T>
-T Queue<T>::pop() {
+T SimpleQueue<T>::pop() {
     if(count_ <= 0) return T(); // Returns empty
     else {
         T result = data_[front_];
@@ -107,16 +107,16 @@ T Queue<T>::pop() {
 }
 
 template<class T>
-T Queue<T>::peek() {
+T SimpleQueue<T>::peek() {
     if(count_ <= 0) return T(); // Returns empty
     else return data_[front_];
 }
 
 template<class T>
-void Queue<T>::clear()
+void SimpleQueue<T>::clear()
 {
     front_ = back_;
     count_ = 0;
 }
 
-#endif //QUEUE_H
+#endif //SIMPLE_QUEUE_H
