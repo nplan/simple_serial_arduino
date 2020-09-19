@@ -12,12 +12,6 @@
 
 class SimpleSerial {
 public:
-    const uint16_t max_payload_len_;
-    const uint16_t max_frame_len_ = 2 * max_payload_len_ + 4; // Maximum frame length
-
-    const uint16_t receive_timeout;   // Packet receive timeout
-    const uint8_t read_num_bytes;    // number of bytes to read in single readLoop()
-
     const uint8_t esc_flag = 1;
     const uint8_t start_flag = 2;
     const uint8_t end_flag = 3;
@@ -88,13 +82,14 @@ public:
             const uint8_t end_flag = 3)
                 : serial_(new SerialModel<T>(serial))
                 , max_payload_len_(max_payload_len)
+                , max_frame_len_(2 * max_payload_len_ + 4)
                 , time_getter(time_getter)
                 , receive_timeout(receive_timeout)
                 , read_num_bytes(read_num_bytes)
                 , esc_flag(esc_flag)
                 , start_flag(start_flag)
                 , end_flag(end_flag)
-                , incoming_payload_(new uint8_t[max_payload_len])
+                , incoming_payload_(new uint8_t[max_payload_len_])
                 , receive_queue(max_queue_len)
                 , send_queue(max_queue_len)
             {};
@@ -185,6 +180,12 @@ private:
             return *this;
         }
     };
+
+    const uint16_t max_payload_len_;
+    const uint16_t max_frame_len_; // Maximum frame length
+
+    const uint16_t receive_timeout;   // Packet receive timeout
+    const uint8_t read_num_bytes;    // number of bytes to read in single readLoop()
 
     // Send / receive queues
     SimpleQueue<Frame> send_queue;

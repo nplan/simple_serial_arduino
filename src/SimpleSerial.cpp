@@ -59,16 +59,14 @@ SimpleSerial::Frame SimpleSerial::build_frame(Packet packet) {
 
     // Extend array to make place for CRC
     uint8_t payload_new[payload_len + 1];
-    for (uint8_t k = 0; k < payload_len; ++k) {
-        payload_new[k] = payload[k];
-    }
+    memcpy(payload_new, payload, payload_len);
     payload = payload_new;
     payload_len++;
 
     // Insert CRC byte to the end of payload
     payload[payload_len - 1] = crc;
 
-    Frame frame(max_payload_len_);
+    Frame frame(max_frame_len_);
 
     // Insert ESC flags
     uint8_t i = 0; // payload byte index
@@ -78,6 +76,10 @@ SimpleSerial::Frame SimpleSerial::build_frame(Packet packet) {
     frame.data[2] = id;
     j = 3;
     while (i < payload_len) {
+        if (j >= max_frame_len_) {
+            Frame empty;
+            return empty;
+        }
         uint8_t b = payload[i];
         if (b == esc_flag || b == start_flag || b == end_flag) {
             // Must insert ESC flag
@@ -180,8 +182,16 @@ void SimpleSerial::read_loop() {
                     return;
                 } else {
                     // Normal data byte. Add to array.
-                    incoming_payload_[payload_i] = b;
-                    payload_i++;
+                    if (payload_i < max_payload_len_) {
+                        incoming_payload_[payload_i] = b;
+                        payload_i++;
+                    }
+                    else {
+                        // Restart
+                        i = 0;
+                        return;
+                    }
+
                 }
             } else {
                 // ESC preceding. Ignore flag following ESC byte.
