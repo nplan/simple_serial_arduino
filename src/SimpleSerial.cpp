@@ -13,6 +13,8 @@ bool SimpleSerial::available() {
  * in send queue.
  */
 void SimpleSerial::send(uint8_t id, uint8_t len, uint8_t const *payload) {
+    // Check len
+    if (len > max_payload_len_) return;
 
     // Frame packet
     Packet packet(id, len, payload);
@@ -54,6 +56,8 @@ SimpleSerial::Frame SimpleSerial::build_frame(Packet packet) {
     uint8_t payload_len = packet.payload_len;
     uint8_t *payload = packet.payload;
 
+    if (payload_len > max_payload_len_) return Frame();
+
     // Calculate CRC
     uint8_t crc = calc_CRC(payload, payload_len);
 
@@ -70,29 +74,30 @@ SimpleSerial::Frame SimpleSerial::build_frame(Packet packet) {
 
     // Insert ESC flags
     uint8_t i = 0; // payload byte index
-    uint8_t j = 0; // packet byte index
+    uint8_t j = 0; // frame byte index
     frame.data[0] = start_flag;
-    frame.data[1] = 0; // packet length
+    frame.data[1] = 0; // frame length
     frame.data[2] = id;
     j = 3;
     while (i < payload_len) {
-        if (j >= max_frame_len_) {
-            Frame empty;
-            return empty;
-        }
         uint8_t b = payload[i];
         if (b == esc_flag || b == start_flag || b == end_flag) {
             // Must insert ESC flag
             frame.data[j] = esc_flag;
             j++;
+            frame.data[j] = b;
+            j++;
+            i++;
         }
-        frame.data[j] = b;
-        j++;
-        i++;
+        else {
+            frame.data[j] = b;
+            j++;
+            i++;
+        }
     }
     frame.data[j] = end_flag;
     j++;
-    frame.data[1] = j; //packet length
+    frame.data[1] = j; //frame length
     frame.len = j;
     return frame;
 }
@@ -129,55 +134,49 @@ void SimpleSerial::read_loop() {
 
         if (!serial_->available())
             return;
-        static uint8_t i = 0; // Byte counter
-        static uint8_t l = 0; // Packet length
-        static uint8_t id = 0; // Packet id
-        static bool esc = false;
-        static uint8_t payload_i = 0;
-        static uint32_t startTime = time;
 
         uint8_t b = serial_->read();
-        if (i == 0 && b == start_flag) {
+        if (byte_count == 0 && b == start_flag) {
             // First byte - START flag. Start count.
-            startTime = time;
-            i = 1;
+            start_time = time;
+            byte_count = 1;
             payload_i = 0;
-        } else if (i == 1) {
+            esc_active = false;
+        } else if (byte_count == 1) {
             // Second byte - packet length
-            l = b;
-            i = 2;
-        } else if (i == 2) {
+            received_frame_len = b;
+            byte_count = 2;
+        } else if (byte_count == 2) {
             // Third byte - packet identifier
-            id = b;
-            i = 3;
-        } else if (i > 2) {
+            received_id = b;
+            byte_count = 3; 
+        } else if (byte_count > 2) {
             // Data value byte
-            if (i > (max_frame_len_) || (time - startTime) > receive_timeout) {
+            if (byte_count > (max_frame_len_) || (time - start_time) > receive_timeout) {
                 // No END flag. Reset.
-                i = 0;
+                byte_count = 0;
                 return;
             }
-            if (!esc) {
+            if (!esc_active) {
                 // No preceding ESC. Accept flags.
                 if (b == esc_flag)
                     // ESC flag. Activate ESC mode.
-                    esc = true;
+                    esc_active = true;
                 else if (b == end_flag) {
                     // End of packet. Check if specified and actual length are equal.
                     uint8_t crc_received = incoming_payload_[payload_i - 1];
                     uint8_t crc_calculated = calc_CRC(incoming_payload_, payload_i - 1);
                     payload_i--;
 
-                    if ((i == l - 1) && (crc_received == crc_calculated)) {
+                    if ((byte_count == received_frame_len - 1) && (crc_received == crc_calculated)) {
                         // Valid data. Add to read queue.
-
-                        Packet packet(id, payload_i, incoming_payload_);
+                        Packet packet(received_id, payload_i, incoming_payload_);
                         receive_queue.push(packet);
-                        i = 0;
+                        byte_count = 0;
                     } else {
                         // CORRUPTED data. Reset
-                        i = 0;
-                        esc = false;
+                        byte_count = 0;
+                        esc_active = false;
                     }
                     return;
                 } else {
@@ -188,7 +187,7 @@ void SimpleSerial::read_loop() {
                     }
                     else {
                         // Restart
-                        i = 0;
+                        byte_count = 0;
                         return;
                     }
 
@@ -197,9 +196,9 @@ void SimpleSerial::read_loop() {
                 // ESC preceding. Ignore flag following ESC byte.
                 incoming_payload_[payload_i] = b;
                 payload_i++;
-                esc = false;
+                esc_active = false;
             }
-            i++;
+            byte_count++;
         }
     }
 }

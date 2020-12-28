@@ -57,7 +57,7 @@ public:
             payload_len = rhs.payload_len;
             delete[] payload;
             payload = new uint8_t[payload_len];
-            void * dest = memcpy(payload, rhs.payload, payload_len);
+            memcpy(payload, rhs.payload, payload_len);
             return *this;
         }
     };
@@ -82,7 +82,7 @@ public:
             const uint8_t end_flag = 3)
                 : serial_(new SerialModel<T>(serial))
                 , max_payload_len_(max_payload_len)
-                , max_frame_len_(2 * max_payload_len_ + 4)
+                , max_frame_len_(2 * max_payload_len_ + 20)
                 , time_getter(time_getter)
                 , receive_timeout(receive_timeout)
                 , read_num_bytes(read_num_bytes)
@@ -197,6 +197,12 @@ private:
     void read_loop();
     void send_loop();
 
+    uint8_t byte_count = 0;
+    uint8_t received_frame_len = 0;
+    uint8_t received_id = 0;
+    bool esc_active = false;
+    uint8_t payload_i = 0;
+    uint32_t start_time = 0;
     uint8_t *incoming_payload_;
 
     unsigned long (*time_getter)() = nullptr;
@@ -204,7 +210,7 @@ private:
 
 };
 
-// Conversions between bytes and int, folat
+// Conversions between bytes and int, float
 namespace byte_conversion {
     float bytes_2_float(uint8_t const *bytes);
     void float_2_bytes(float f, uint8_t *bytes);
